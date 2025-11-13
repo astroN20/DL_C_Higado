@@ -8,7 +8,7 @@ from PIL import Image
 # --- Cargar modelos ---
 models = {
     "CNN": tf.keras.models.load_model("best_cnn_simple.h5"),
-    "MobileNetV2": tf.keras.models.load_model("best_mobilev2.h5"),
+    "MobileNetV2": tf.keras.models.load_model("best_mobilenetv2.h5"),
     "EfficientNetB0": tf.keras.models.load_model("best_efficientnetb0.h5")
 }
 

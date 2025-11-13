@@ -96,9 +96,6 @@ clin_df = pd.DataFrame([clin_data])
 
 
 
-
-clin_df = pd.DataFrame([clin_data])
-
 # Crear columnas faltantes con 0
 for col in scaler.feature_names_in_:
     if col not in clin_df.columns:

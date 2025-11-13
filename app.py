@@ -35,10 +35,18 @@ fields = [
 for f in fields:
     clinical_inputs[f] = st.number_input(f"Ingrese {f}", value=0.0)
 
-clin_df = pd.DataFrame([clinical_inputs])
-clin_df = clin_df[scaler.feature_names_in_]
-clin_scaled = scaler.transform(clin_df).astype("float32")
+clin_df = pd.DataFrame([clin_data])
 
+# Crear columnas faltantes con 0
+for col in scaler.feature_names_in_:
+    if col not in clin_df.columns:
+        clin_df[col] = 0
+
+# Reordenar exactamente igual que el scaler
+clin_df = clin_df[scaler.feature_names_in_]
+
+# Escalar
+clin_scaled = scaler.transform(clin_df).astype("float32")
 # --- Selección del modelo ---
 model_name = st.selectbox("Selecciona el modelo a usar", list(models.keys()))
 

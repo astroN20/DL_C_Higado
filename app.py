@@ -32,8 +32,7 @@ fields = [
     "age", "Sex", "hepatitis", "Smoking", "Alcohol", "fhx_can", "fhx_livc",
     "Diabetes", "Evidence_of_cirh", "3PS", "AFP", "Tr_Size", "tumor_nodul"
 ]
-for f in fields:
-    clinical_inputs[f] = st.number_input(f"Ingrese {f}", value=0.0)
+
 
 # --- Recolectar los datos del usuario ---
 # --- Entradas clínicas ---

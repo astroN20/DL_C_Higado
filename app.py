@@ -15,11 +15,11 @@ models = {
 # --- Cargar scaler ---
 scaler = joblib.load("scaler_clinical.pkl")
 
-st.title("🩺 Detección de Cáncer de Hígado — Deep Learning")
-st.markdown("Carga una **imagen de TC** y los **datos clínicos del paciente** para predecir si el caso es *Parient Cesored* o *Progressed*.")
+st.title("Detección de Cáncer de Hígado — Deep Learning")
+st.markdown("Carga una **imagen de TC** y los **datos clínicos del paciente** .")
 
 # --- Entrada de imagen ---
-img_file = st.file_uploader("📷 Subir imagen (PNG o JPG)", type=["png", "jpg", "jpeg"])
+img_file = st.file_uploader(" Subir imagen (PNG o JPG)", type=["png", "jpg", "jpeg"])
 if img_file:
     img = Image.open(img_file).convert("RGB").resize((128, 128))
     st.image(img, caption="Imagen cargada", use_column_width=True)
@@ -36,6 +36,7 @@ for f in fields:
     clinical_inputs[f] = st.number_input(f"Ingrese {f}", value=0.0)
 
 clin_df = pd.DataFrame([clinical_inputs])
+clin_df = clin_df[scaler.feature_names_in_]
 clin_scaled = scaler.transform(clin_df).astype("float32")
 
 # --- Selección del modelo ---

@@ -139,7 +139,7 @@ clin_scaled = scaler.transform(clin_df).astype("float32")
 # --- Selección del modelo ---
 model_name = st.selectbox("Selecciona el modelo a usar", list(models.keys()))
 
-if st.button("🔍 Predecir"):
+if st.button("Predecir"):
     model = models[model_name]
     if img_file:
         pred = model.predict([img_array, clin_scaled])[0][0]

@@ -25,14 +25,6 @@ if img_file:
     st.image(img, caption="Imagen cargada", use_column_width=True)
     img_array = np.expand_dims(np.array(img) / 255.0, axis=0)
 
-# --- Entradas clínicas ---
-st.subheader("Datos clínicos")
-clinical_inputs = {}
-fields = [
-    "age", "Sex", "hepatitis", "Smoking", "Alcohol", "fhx_can", "fhx_livc",
-    "Diabetes", "Evidence_of_cirh", "3PS", "AFP", "Tr_Size", "tumor_nodul"
-]
-
 
 # --- Recolectar los datos del usuario ---
 # --- Entradas clínicas ---

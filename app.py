@@ -15,7 +15,7 @@ models = {
 # --- Cargar scaler ---
 scaler = joblib.load("scaler_clinical.pkl")
 
-st.title("Detección de Cáncer de Hígado — Deep Learning")
+st.title("Detección de Cáncer de Hígado")
 st.markdown("Carga una **imagen de TC** y los **datos clínicos del paciente** .")
 
 # --- Entrada de imagen ---

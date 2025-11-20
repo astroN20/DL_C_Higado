@@ -242,16 +242,62 @@ if predict_button:
             st.error("Selected model is not available.")
         else:
             try:
-                img_array = prepare_image_for_model(image, target_size=(128,128))
-                # try couple of calling patterns
-                try:
-                    raw_pred = model.predict([img_array, clin_scaled], verbose=0)
-                except Exception:
-                    try:
-                        raw_pred = model.predict([clin_scaled, img_array], verbose=0)
-                    except Exception:
-                        raw_pred = model.predict(img_array, verbose=0)
+                img_array = prepare_image_for_model(image, target_size=(128,128))  # shape (1,H,W,3)
+                # clin_scaled ya debería estar preparado como array numpy (1, n_features)
+                # Aseguramos type correcto
+                if clin_scaled is None:
+                    st.error("Clinical data not available for prediction.")
+                    raise RuntimeError("No clinical data")
 
+                # Detect how many inputs model expects
+                try:
+                    n_inputs = len(model.inputs)
+                except Exception:
+                    # fallback: assume single input
+                    n_inputs = 1
+
+                # Build inputs according to model.inputs shapes
+                pred_inputs = None
+                if n_inputs == 1:
+                    # model expects one input. Decide which one by comparing shapes:
+                    # if model input rank==4 -> image, else -> tabular
+                    try:
+                        inp0 = model.inputs[0]
+                        if len(inp0.shape) == 4:
+                            pred_inputs = img_array
+                        else:
+                            pred_inputs = clin_scaled
+                    except Exception:
+                        pred_inputs = img_array  # fallback to image
+                elif n_inputs == 2:
+                    # Create placeholders for two inputs and assign by shape heuristics
+                    inp_list = [None, None]
+                    for i, inp in enumerate(model.inputs):
+                        try:
+                            if len(inp.shape) == 4:
+                                inp_list[i] = img_array
+                            else:
+                                inp_list[i] = clin_scaled
+                        except Exception:
+                            # if shape inspection fails, leave as None
+                            inp_list[i] = None
+                    # If any position is None, fill with sensible ordering [img, clin]
+                    if inp_list[0] is None and inp_list[1] is None:
+                        pred_inputs = [img_array, clin_scaled]
+                    else:
+                        # fill missing slots
+                        for i in range(2):
+                            if inp_list[i] is None:
+                                inp_list[i] = img_array if i==0 else clin_scaled
+                        pred_inputs = inp_list
+                else:
+                    # More than 2 inputs (unlikely). Try to pass image + clin as first two.
+                    pred_inputs = [img_array, clin_scaled] + [np.zeros((1,))] * (n_inputs-2)
+
+                # Now call predict
+                raw_pred = model.predict(pred_inputs, verbose=0)
+
+                # Normalize output
                 if isinstance(raw_pred, (list, tuple)):
                     raw_pred = raw_pred[0]
                 prob = float(np.squeeze(raw_pred))

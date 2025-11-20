@@ -94,7 +94,6 @@ with left_col:
     if uploaded_file:
         try:
             image = Image.open(io.BytesIO(uploaded_file.getvalue())).convert("RGB")
-            # preview (not resized for model automatically)
             display_image = image.copy()
             display_image.thumbnail((400,400))
             st.image(display_image, caption="Uploaded CT image", use_column_width=True)
@@ -107,9 +106,10 @@ with left_col:
     model_name = st.selectbox("Choose model", list(models.keys()))
     predict_button = st.button("Predict")
 
-# ---------------- Right: clinical inputs ----------------
+# ---------------- Right: clinical inputs arranged side-by-side (two columns per row) ----------------
 with right_col:
-    st.subheader("Clinical information")
+    st.subheader("Clinical information (two-column layout)")
+
     # initialize last-used values if not present
     defaults = {
         "age": 50,
@@ -130,39 +130,56 @@ with right_col:
         if k not in st.session_state:
             st.session_state[k] = v
 
-    use_same = st.checkbox("Use same patient values (use last entered / defaults)")
-
-    if use_same:
+    # Row 1: Age | Sex
+    col1, col2 = st.columns(2)
+    with col1:
         age = st.number_input("Age", min_value=0, max_value=120, value=int(st.session_state.age))
+    with col2:
         sex = st.selectbox("Sex", ["Male", "Female"], index=0 if st.session_state.sex=="Male" else 1)
-        hepatitis = st.selectbox("Type of hepatitis", ["No virus", "HBV only", "HCV only", "HCV and HBV"],
-                                 index=["No virus", "HBV only", "HCV only", "HCV and HBV"].index(st.session_state.hepatitis))
-        smoking = st.selectbox("Smoking", ["No", "Yes"], index=0 if st.session_state.smoking=="No" else 1)
-        alcohol = st.selectbox("Alcohol consumption", ["No", "Yes"], index=0 if st.session_state.alcohol=="No" else 1)
-        diabetes = st.selectbox("Diabetes", ["No", "Yes"], index=0 if st.session_state.diabetes=="No" else 1)
-        fhx_can = st.selectbox("Family history of cancer", ["No", "Yes"], index=0 if st.session_state.fhx_can=="No" else 1)
-        fhx_livc = st.selectbox("Family history of liver cancer", ["No", "Yes"], index=0 if st.session_state.fhx_livc=="No" else 1)
-        evidence_of_cirh = st.selectbox("Evidence of cirrhosis", ["No", "Yes"], index=0 if st.session_state.evidence_of_cirh=="No" else 1)
-        cps = st.selectbox("Child-Pugh Score (CPS)", ["A", "B", "C"], index=["A","B","C"].index(st.session_state.cps))
-        afp = st.number_input("AFP (alpha-fetoprotein) (ng/ml)", min_value=0.0, value=float(st.session_state.afp), format="%.2f")
-        tr_size = st.number_input("Tumor size (cm)", min_value=0.0, value=float(st.session_state.tr_size), format="%.2f")
-        tumor_nodul = st.selectbox("Tumor nodularity", ["Uninodular", "Multinodular"], index=0 if st.session_state.tumor_nodul=="Uninodular" else 1)
-    else:
-        age = st.number_input("Age", min_value=0, max_value=120, value=int(st.session_state.age))
-        sex = st.selectbox("Sex", ["Male", "Female"], index=0 if st.session_state.sex=="Male" else 1)
-        hepatitis = st.selectbox("Type of hepatitis", ["No virus", "HBV only", "HCV only", "HCV and HBV"],
-                                 index=["No virus", "HBV only", "HCV only", "HCV and HBV"].index(st.session_state.hepatitis))
-        smoking = st.selectbox("Smoking", ["No", "Yes"], index=0 if st.session_state.smoking=="No" else 1)
-        alcohol = st.selectbox("Alcohol consumption", ["No", "Yes"], index=0 if st.session_state.alcohol=="No" else 1)
-        diabetes = st.selectbox("Diabetes", ["No", "Yes"], index=0 if st.session_state.diabetes=="No" else 1)
-        fhx_can = st.selectbox("Family history of cancer", ["No", "Yes"], index=0 if st.session_state.fhx_can=="No" else 1)
-        fhx_livc = st.selectbox("Family history of liver cancer", ["No", "Yes"], index=0 if st.session_state.fhx_livc=="No" else 1)
-        evidence_of_cirh = st.selectbox("Evidence of cirrhosis", ["No", "Yes"], index=0 if st.session_state.evidence_of_cirh=="No" else 1)
-        cps = st.selectbox("Child-Pugh Score (CPS)", ["A", "B", "C"], index=["A","B","C"].index(st.session_state.cps))
-        afp = st.number_input("AFP (alpha-fetoprotein) (ng/ml)", min_value=0.0, value=float(st.session_state.afp), format="%.2f")
-        tr_size = st.number_input("Tumor size (cm)", min_value=0.0, value=float(st.session_state.tr_size), format="%.2f")
-        tumor_nodul = st.selectbox("Tumor nodularity", ["Uninodular", "Multinodular"], index=0 if st.session_state.tumor_nodul=="Uninodular" else 1)
 
+    # Row 2: Hepatitis | Smoking
+    col1, col2 = st.columns(2)
+    with col1:
+        hepatitis = st.selectbox(
+            "Type of hepatitis",
+            ["No virus", "HBV only", "HCV only", "HCV and HBV"],
+            index=["No virus", "HBV only", "HCV only", "HCV and HBV"].index(st.session_state.hepatitis)
+        )
+    with col2:
+        smoking = st.selectbox("Smoking", ["No", "Yes"], index=0 if st.session_state.smoking=="No" else 1)
+
+    # Row 3: Alcohol | Diabetes
+    col1, col2 = st.columns(2)
+    with col1:
+        alcohol = st.selectbox("Alcohol consumption", ["No", "Yes"], index=0 if st.session_state.alcohol=="No" else 1)
+    with col2:
+        diabetes = st.selectbox("Diabetes", ["No", "Yes"], index=0 if st.session_state.diabetes=="No" else 1)
+
+    # Row 4: Family history (any) | Family history (liver)
+    col1, col2 = st.columns(2)
+    with col1:
+        fhx_can = st.selectbox("Family history of cancer", ["No", "Yes"], index=0 if st.session_state.fhx_can=="No" else 1)
+    with col2:
+        fhx_livc = st.selectbox("Family history of liver cancer", ["No", "Yes"], index=0 if st.session_state.fhx_livc=="No" else 1)
+
+    # Row 5: Evidence of cirrhosis | Child-Pugh Score
+    col1, col2 = st.columns(2)
+    with col1:
+        evidence_of_cirh = st.selectbox("Evidence of cirrhosis", ["No", "Yes"], index=0 if st.session_state.evidence_of_cirh=="No" else 1)
+    with col2:
+        cps = st.selectbox("Child-Pugh Score (CPS)", ["A", "B", "C"], index=["A","B","C"].index(st.session_state.cps))
+
+    # Row 6: AFP | Tumor size
+    col1, col2 = st.columns(2)
+    with col1:
+        afp = st.number_input("AFP (alpha-fetoprotein) (ng/ml)", min_value=0.0, value=float(st.session_state.afp), format="%.2f")
+    with col2:
+        tr_size = st.number_input("Tumor size (cm)", min_value=0.0, value=float(st.session_state.tr_size), format="%.2f")
+
+    # Row 7: Tumor nodularity (full width)
+    tumor_nodul = st.selectbox("Tumor nodularity", ["Uninodular", "Multinodular"], index=0 if st.session_state.tumor_nodul=="Uninodular" else 1)
+
+    # Save last patient values button
     if st.button("Save this patient as 'last used'"):
         st.session_state.age = age
         st.session_state.sex = sex

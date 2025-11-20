@@ -179,22 +179,7 @@ with right_col:
     # Row 7: Tumor nodularity (full width)
     tumor_nodul = st.selectbox("Tumor nodularity", ["Uninodular", "Multinodular"], index=0 if st.session_state.tumor_nodul=="Uninodular" else 1)
 
-    # Save last patient values button
-    if st.button("Save this patient as 'last used'"):
-        st.session_state.age = age
-        st.session_state.sex = sex
-        st.session_state.hepatitis = hepatitis
-        st.session_state.smoking = smoking
-        st.session_state.alcohol = alcohol
-        st.session_state.diabetes = diabetes
-        st.session_state.fhx_can = fhx_can
-        st.session_state.fhx_livc = fhx_livc
-        st.session_state.evidence_of_cirh = evidence_of_cirh
-        st.session_state.cps = cps
-        st.session_state.afp = afp
-        st.session_state.tr_size = tr_size
-        st.session_state.tumor_nodul = tumor_nodul
-        st.success("Saved last patient values to session.")
+    
 
 # ---------------- Prepare clinical dataframe & scaling ----------------
 clin_dict = {
@@ -233,6 +218,7 @@ def prepare_image_for_model(pil_img: Image.Image, target_size=(128,128)):
     return arr
 
 # ---------------- Prediction ----------------
+# ---------------- Prediction (robust input handling, auto-save history) ----------------
 if predict_button:
     if uploaded_file is None or image is None:
         st.warning("Please upload an image before predicting.")
@@ -242,35 +228,34 @@ if predict_button:
             st.error("Selected model is not available.")
         else:
             try:
-                img_array = prepare_image_for_model(image, target_size=(128,128))  # shape (1,H,W,3)
-                # clin_scaled ya debería estar preparado como array numpy (1, n_features)
-                # Aseguramos type correcto
+                # prepare image at correct size expected by model
+                img_array = prepare_image_for_model(image, target_size=(224,224))  # <-- 224x224
+
                 if clin_scaled is None:
                     st.error("Clinical data not available for prediction.")
                     raise RuntimeError("No clinical data")
 
-                # Detect how many inputs model expects
+                # make sure clin_scaled shape/dtype are correct
+                import numpy as np
+                clin_scaled = np.asarray(clin_scaled).astype("float32")
+                if clin_scaled.ndim == 1:
+                    clin_scaled = np.expand_dims(clin_scaled, axis=0)
+
+                # detect expected inputs of the model
                 try:
                     n_inputs = len(model.inputs)
                 except Exception:
-                    # fallback: assume single input
                     n_inputs = 1
 
-                # Build inputs according to model.inputs shapes
+                # assemble inputs according to input shapes (image -> rank 4)
                 pred_inputs = None
                 if n_inputs == 1:
-                    # model expects one input. Decide which one by comparing shapes:
-                    # if model input rank==4 -> image, else -> tabular
-                    try:
-                        inp0 = model.inputs[0]
-                        if len(inp0.shape) == 4:
-                            pred_inputs = img_array
-                        else:
-                            pred_inputs = clin_scaled
-                    except Exception:
-                        pred_inputs = img_array  # fallback to image
+                    inp0 = model.inputs[0]
+                    if len(inp0.shape) == 4:
+                        pred_inputs = img_array
+                    else:
+                        pred_inputs = clin_scaled
                 elif n_inputs == 2:
-                    # Create placeholders for two inputs and assign by shape heuristics
                     inp_list = [None, None]
                     for i, inp in enumerate(model.inputs):
                         try:
@@ -279,25 +264,22 @@ if predict_button:
                             else:
                                 inp_list[i] = clin_scaled
                         except Exception:
-                            # if shape inspection fails, leave as None
                             inp_list[i] = None
-                    # If any position is None, fill with sensible ordering [img, clin]
+                    # fill missing slots sensibly
                     if inp_list[0] is None and inp_list[1] is None:
                         pred_inputs = [img_array, clin_scaled]
                     else:
-                        # fill missing slots
                         for i in range(2):
                             if inp_list[i] is None:
-                                inp_list[i] = img_array if i==0 else clin_scaled
+                                inp_list[i] = img_array if i == 0 else clin_scaled
                         pred_inputs = inp_list
                 else:
-                    # More than 2 inputs (unlikely). Try to pass image + clin as first two.
-                    pred_inputs = [img_array, clin_scaled] + [np.zeros((1,))] * (n_inputs-2)
+                    # fallback: pass image then clin
+                    pred_inputs = [img_array, clin_scaled] + [np.zeros((1,))] * (n_inputs - 2)
 
-                # Now call predict
+                # call predict with the prepared inputs
                 raw_pred = model.predict(pred_inputs, verbose=0)
 
-                # Normalize output
                 if isinstance(raw_pred, (list, tuple)):
                     raw_pred = raw_pred[0]
                 prob = float(np.squeeze(raw_pred))
@@ -312,7 +294,7 @@ if predict_button:
                 else:
                     st.info("Model indicates a negative/no-progression prediction. Clinical correlation recommended.")
 
-                # save to history
+                # --- auto-save to history (only when prediction was successful) ---
                 record = {
                     "timestamp": datetime.now().isoformat(timespec="seconds"),
                     "model": model_name,

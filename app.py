@@ -14,9 +14,9 @@ st.set_page_config(
 
 @st.cache_resource
 def load_resources():
-
-    model = tf.keras.models.load_model('cnn_best_model.keras') 
- 
+   
+    model = tf.keras.models.load_model('cnn_best_model.keras')  
+    
     scaler = joblib.load('scaler.pkl')
     return model, scaler
 

@@ -46,9 +46,9 @@ with col2:
     c1, c2 = st.columns(2)
 
     with c1:
-        age = st.number_input("1. Edad", min_value=1, max_value=100, value=50)
+        age = st.number_input("1. Edad", min_value=1, max_value=100, value=00)
         gender = st.selectbox("2. Género", options=[0, 1], format_func=lambda x: "Masculino" if x == 1 else "Femenino")
-        bmi = st.number_input("3. Índice de Masa Corporal (BMI)", value=24.0)
+        bmi = st.number_input("3. Índice de Masa Corporal (BMI)", value=0.0)
         alcohol = st.selectbox("4. Consumo de Alcohol", options=[0, 1], format_func=lambda x: "Sí" if x == 1 else "No")
         smoking = st.selectbox("5. ¿Fuma?", options=[0, 1], format_func=lambda x: "Sí" if x == 1 else "No")
         diabetes = st.selectbox("6. Diabetes", options=[0, 1], format_func=lambda x: "Sí" if x == 1 else "No")
@@ -58,10 +58,10 @@ with col2:
       
         cirrhosis = st.selectbox("8. Cirrosis", options=[0, 1], format_func=lambda x: "Sí" if x == 1 else "No")
         family_history = st.selectbox("9. Antecedentes Familiares", options=[0, 1], format_func=lambda x: "Sí" if x == 1 else "No")
-        afp = st.number_input("10. Niveles AFP (ng/mL)", value=10.0)
-        alt = st.number_input("11. Niveles ALT (U/L)", value=30.0)
-        ast = st.number_input("12. Niveles AST (U/L)", value=30.0)
-        tumor_size = st.number_input("13. Tamaño del Tumor (cm)", value=2.0)
+        afp = st.number_input("10. Niveles AFP (ng/mL)", value=0)
+        alt = st.number_input("11. Niveles ALT (U/L)", value=0)
+        ast = st.number_input("12. Niveles AST (U/L)", value=0)
+        tumor_size = st.number_input("13. Tamaño del Tumor (cm)", value=0)
 
     if st.button("Realizar Diagnóstico", type="primary"):
         if file is None:

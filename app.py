@@ -4,101 +4,83 @@ import numpy as np
 import pandas as pd
 from PIL import Image, ImageOps
 import joblib
+import os
+import gdown
 
-st.set_page_config(
-    page_title="Detección de Cáncer de Hígado",
-    page_icon="🏥",
-    layout="wide"
-)
-
+st.set_page_config(page_title="Detección de Cáncer de Hígado", layout="wide")
 
 @st.cache_resource
 def load_resources():
-   
-    model = tf.keras.models.load_model('cnn_best_model.keras')  
+    model_path = 'cnn_best_model.keras'
+    scaler_path = 'scaler.pkl'
     
-    scaler = joblib.load('scaler.pkl')
-    return model, scaler
+ 
+    if not os.path.exists(model_path) or os.path.getsize(model_path) < 1000000:
+        st.warning("Detectado archivo de modelo incompleto (Git LFS pointer). Descargando original...")
+   
+        file_id = 'PEGA_AQUI_TU_ID_DE_DRIVE_SIN_BORRAR_COMILLAS' 
+        
+        url = f'https://drive.google.com/uc?id={file_id}'
+        try:
+            gdown.download(url, model_path, quiet=False)
+            st.success("✅ Modelo descargado correctamente.")
+        except Exception as e:
+            st.error(f"Error al descargar: {e}")
+            st.stop()
 
-try:
-    model, scaler = load_resources()
-except Exception as e:
-    st.error(f"Error al cargar archivos: {e}. Verifica que 'cnn_best_model.keras' y 'scaler.pkl' estén en la carpeta.")
-    st.stop()
+
+    try:
+        model = tf.keras.models.load_model(model_path)
+        scaler = joblib.load(scaler_path)
+        return model, scaler
+    except Exception as e:
+        st.error(f"Error crítico al cargar el modelo: {e}")
+        st.stop()
 
 
-st.title("🏥 Sistema de Detección Temprana de Cáncer de Hígado")
-st.markdown("""
-Este sistema utiliza **Deep Learning Multimodal** integrando imágenes de TC y datos clínicos 
-para estimar la probabilidad de carcinoma hepatocelular.
-""")
+model, scaler = load_resources()
 
+
+st.title("🏥 Detección Temprana de Cáncer de Hígado")
+st.write("Sistema de Deep Learning Multimodal (Imágenes TC + Datos Clínicos)")
 
 col1, col2 = st.columns([1, 1.5])
 
 with col1:
-    st.subheader("1. Imagen de Tomografía (TC)")
-    file = st.file_uploader("Cargar imagen (JPG/PNG)", type=["jpg", "png", "jpeg"])
-    
-    if file is not None:
+    st.subheader("1. Imagen TC")
+    file = st.file_uploader("Subir imagen", type=["jpg", "png", "jpeg"])
+    if file:
         image = Image.open(file)
-        st.image(image, caption="Imagen cargada", use_column_width=True)
+        st.image(image, use_column_width=True)
 
 with col2:
-    st.subheader("2. Datos Clínicos del Paciente")
-    st.info("Por favor ingrese los valores clínicos.")
-
-    c1, c2 = st.columns(2)
+    st.subheader("2. Datos Clínicos")
+ 
+    age = st.number_input("Edad", 1, 100, 50)
     
-    with c1:
-        age = st.number_input("Edad", min_value=1, max_value=100, value=50)
-        gender = st.selectbox("Género", options=[0, 1], format_func=lambda x: "Masculino" if x == 1 else "Femenino")
-        hepatitis = st.selectbox("Hepatitis", options=[0, 1], format_func=lambda x: "Sí" if x == 1 else "No")
-        diabetes = st.selectbox("Diabetes", options=[0, 1], format_func=lambda x: "Sí" if x == 1 else "No")
-        alcohol = st.selectbox("Consumo de Alcohol", options=[0, 1], format_func=lambda x: "Sí" if x == 1 else "No")
-
-    with c2:
-        cirrhosis = st.selectbox("Cirrosis", options=[0, 1], format_func=lambda x: "Sí" if x == 1 else "No")
-        afp = st.number_input("AFP (Alpha-fetoprotein)", value=10.0)
-        tumor_size = st.number_input("Tamaño del tumor (cm)", value=2.0)
-
-    if st.button("Realizar Diagnóstico", type="primary"):
+    if st.button("Predecir", type="primary"):
         if file is None:
-            st.warning(" Por favor cargue una imagen primero.")
+            st.error("Falta la imagen")
         else:
-            with st.spinner('Analizando datos multimodales...'):
+            with st.spinner('Procesando...'):
+                
+                img = ImageOps.fit(image, (224, 224), Image.Resampling.LANCZOS)
+                img_array = np.array(img) / 255.0
+                img_batch = np.expand_dims(img_array, axis=0)
+                
+           
+                datos = np.array([[age]]) 
+                
                 try:
-                 
-                    img = ImageOps.fit(image, (224, 224), Image.Resampling.LANCZOS)
-                    img_array = np.array(img)
-                    
-                
-                    img_array = img_array / 255.0  
-                    
-             
-                    img_batch = np.expand_dims(img_array, axis=0)
-
-            
-                    datos_clinicos = np.array([[age, gender, hepatitis, diabetes, alcohol, cirrhosis, afp, tumor_size]]) 
-                    
-                
-                    datos_clinicos_scaled = datos_clinicos 
-
-                    
-                    prediction = model.predict([img_batch, datos_clinicos_scaled])
-                    
-                  
-                    score = prediction[0][0]
-                    probabilidad = score * 100
+                    pred = model.predict([img_batch, datos]) 
+                    prob = pred[0][0] * 100
                     
                     st.divider()
-                    if score > 0.5:
-                        st.error(f"**Resultado: ALTO RIESGO DE CÁNCER (Clase Positiva)**")
-                        st.write(f"Probabilidad estimada: **{probabilidad:.2f}%**")
+                    if prob > 50:
+                        st.error(f"Riesgo Alto: {prob:.2f}%")
                     else:
-                        st.success(f" **Resultado: BAJO RIESGO (Clase Negativa)**")
-                        st.write(f"Probabilidad estimada: **{probabilidad:.2f}%**")
-                        
+                        st.success(f"Riesgo Bajo: {prob:.2f}%")
                 except Exception as e:
-                    st.error(f"Error en el procesamiento: {e}")
-                    st.info("Consejo: Verifica que el número de variables clínicas coincida con el entrenamiento.")
+                    st.warning("El modelo cargó bien, pero falló la predicción por las variables.")
+                    st.error(f"Detalle: {e}")
+       

@@ -1,7 +1,7 @@
 streamlit
-tensorflow==2.20.0
-joblib
-pillow
-numpy
+tensorflow
 pandas
+numpy
+pillow
+joblib
 scikit-learn

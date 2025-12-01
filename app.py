@@ -46,7 +46,7 @@ with col2:
     c1, c2 = st.columns(2)
 
     with c1:
-        age = st.number_input("1. Edad", min_value=1, max_value=100, value=00)
+        age = st.number_input("1. Edad", min_value=1, max_value=100, value=40)
         gender = st.selectbox("2. Género", options=[0, 1], format_func=lambda x: "Masculino" if x == 1 else "Femenino")
         bmi = st.number_input("3. Índice de Masa Corporal (BMI)", value=0.0)
         alcohol = st.selectbox("4. Consumo de Alcohol", options=[0, 1], format_func=lambda x: "Sí" if x == 1 else "No")

@@ -42,9 +42,65 @@ with col1:
 
 with col2:
     st.subheader("2. Datos Clínicos del Paciente")
+    st.info("Complete los 13 campos clínicos requeridos.")
 
-    age = st.number_input("Edad", min_value=1, max_value=100, value=50)
-    gender = st.selectbox("Género", options=[0, 1], format_func=lambda x: "Masculino" if x == 1 else "Femenino")
+    # Dividimos en dos columnas para que se vea ordenado
+    c1, c2 = st.columns(2)
+
+    with c1:
+        # Variables demográficas y hábitos
+        age = st.number_input("1. Edad", min_value=1, max_value=100, value=50)
+        gender = st.selectbox("2. Género", options=[0, 1], format_func=lambda x: "Masculino" if x == 1 else "Femenino")
+        bmi = st.number_input("3. Índice de Masa Corporal (BMI)", value=24.0)
+        alcohol = st.selectbox("4. Consumo de Alcohol", options=[0, 1], format_func=lambda x: "Sí" if x == 1 else "No")
+        smoking = st.selectbox("5. ¿Fuma?", options=[0, 1], format_func=lambda x: "Sí" if x == 1 else "No")
+        diabetes = st.selectbox("6. Diabetes", options=[0, 1], format_func=lambda x: "Sí" if x == 1 else "No")
+        hepatitis = st.selectbox("7. Hepatitis B/C", options=[0, 1], format_func=lambda x: "Sí" if x == 1 else "No")
+
+    with c2:
+        # Variables médicas y marcadores
+        cirrhosis = st.selectbox("8. Cirrosis", options=[0, 1], format_func=lambda x: "Sí" if x == 1 else "No")
+        family_history = st.selectbox("9. Antecedentes Familiares", options=[0, 1], format_func=lambda x: "Sí" if x == 1 else "No")
+        afp = st.number_input("10. Niveles AFP (ng/mL)", value=10.0)
+        alt = st.number_input("11. Niveles ALT (U/L)", value=30.0)
+        ast = st.number_input("12. Niveles AST (U/L)", value=30.0)
+        tumor_size = st.number_input("13. Tamaño del Tumor (cm)", value=2.0)
+
+    # Botón de Predicción
+    if st.button("Realizar Diagnóstico", type="primary"):
+        if file is None:
+            st.warning("⚠️ Por favor cargue una imagen primero.")
+        else:
+            with st.spinner('Analizando datos multimodales...'):
+                try:
+                    # 1. Procesar Imagen
+                    img = ImageOps.fit(image, (224, 224), Image.Resampling.LANCZOS)
+                    img_array = np.array(img) / 255.0
+                    img_batch = np.expand_dims(img_array, axis=0)
+
+                    datos_clinicos = np.array([[
+                        age, gender, bmi, alcohol, smoking, diabetes, hepatitis,
+                        cirrhosis, family_history, afp, alt, ast, tumor_size
+                    ]]) 
+                    
+                 
+                    prediction = model.predict([img_batch, datos_clinicos])
+                    probabilidad = prediction[0][0] * 100
+                    
+                    st.divider()
+                    st.subheader("Resultado del Análisis")
+                    if probabilidad > 50:
+                        st.error(f"🚨 **RIESGO ALTO DETECTADO**")
+                        st.write(f"Probabilidad de Cáncer: **{probabilidad:.2f}%**")
+                        st.progress(int(probabilidad))
+                    else:
+                        st.success(f"✅ **BAJO RIESGO / SANO**")
+                        st.write(f"Probabilidad de Cáncer: **{probabilidad:.2f}%**")
+                        st.progress(int(probabilidad))
+                        
+                except Exception as e:
+                    st.error(f"Ocurrió un error: {e}")
+                    st.warning("Revisa que el número de variables (13) coincida con tu entrenamiento.")
 
 
   

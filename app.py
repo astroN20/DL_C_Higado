@@ -26,7 +26,7 @@ def load_resources():
 
 model, scaler = load_resources()
 
-st.title("🏥 Sistema de Detección Temprana de Cáncer de Hígado")
+st.title("Sistema de Detección Temprana de Cáncer de Hígado")
 st.markdown("Este sistema utiliza **Deep Learning Multimodal** integrando imágenes de TC y datos clínicos.")
 
 

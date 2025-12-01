@@ -15,7 +15,7 @@ st.set_page_config(
 @st.cache_resource
 def load_resources():
 
-    model = tf.keras.models.load_model('mi_modelo_cnn.keras') 
+    model = tf.keras.models.load_model('cnn_best_model.keras') 
  
     scaler = joblib.load('scaler.pkl')
     return model, scaler
@@ -23,7 +23,7 @@ def load_resources():
 try:
     model, scaler = load_resources()
 except Exception as e:
-    st.error(f"Error al cargar archivos: {e}. Verifica que 'mi_modelo_cnn.keras' y 'scaler.pkl' estén en la carpeta.")
+    st.error(f"Error al cargar archivos: {e}. Verifica que 'cnn_best_model.keras' y 'scaler.pkl' estén en la carpeta.")
     st.stop()
 
 
@@ -93,10 +93,10 @@ with col2:
                     
                     st.divider()
                     if score > 0.5:
-                        st.error(f"🚨 **Resultado: ALTO RIESGO DE CÁNCER (Clase Positiva)**")
+                        st.error(f"**Resultado: ALTO RIESGO DE CÁNCER (Clase Positiva)**")
                         st.write(f"Probabilidad estimada: **{probabilidad:.2f}%**")
                     else:
-                        st.success(f"✅ **Resultado: BAJO RIESGO (Clase Negativa)**")
+                        st.success(f" **Resultado: BAJO RIESGO (Clase Negativa)**")
                         st.write(f"Probabilidad estimada: **{probabilidad:.2f}%**")
                         
                 except Exception as e:

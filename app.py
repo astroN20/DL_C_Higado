@@ -37,7 +37,7 @@ with col1:
     file = st.file_uploader("Upload image (JPG/PNG)", type=["jpg", "png", "jpeg"])
     
     if file is not None:
-        image = Image.open(file)
+       image = Image.open(file).convert('RGB') 
         st.image(image, caption="Image uploaded", use_column_width=True)
 
 with col2:

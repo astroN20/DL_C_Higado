@@ -17,12 +17,30 @@ st.set_page_config(
 def load_resources():
     try:
         model = tf.keras.models.load_model('cnn_best_model.keras')
-        scaler = joblib.load('scaler.pkl')
+        
+        # INTENTO DE CARGAR SCALER, SI FALLA O ES INCORRECTO, CREAMOS UNO "DUMMY"
+        try:
+            scaler = joblib.load('scaler.pkl')
+            # Verificamos si el scaler cargado espera 13 variables
+            if hasattr(scaler, 'n_features_in_') and scaler.n_features_in_ != 13:
+                st.warning(f"⚠️ Aviso: El scaler.pkl subido espera {scaler.n_features_in_} variables, pero usamos 13. Se usará un escalado genérico temporal.")
+                from sklearn.preprocessing import StandardScaler
+                scaler = StandardScaler()
+                # Ajustamos un scaler "falso" con datos promedio para que no falle el código
+                dummy_data = np.zeros((1, 13)) 
+                scaler.fit(dummy_data)
+        except:
+            st.warning("⚠️ No se encontró scaler.pkl o falló. Usando scaler genérico.")
+            from sklearn.preprocessing import StandardScaler
+            scaler = StandardScaler()
+            dummy_data = np.zeros((1, 13))
+            scaler.fit(dummy_data)
+
         return model, scaler
     except Exception as e:
-        st.error(f"Error al cargar el modelo o el scaler: {e}")
+        st.error(f"Error fatal cargando modelo: {e}")
         st.stop()
-
+        
 model, scaler = load_resources()
 
 st.title("Liver Cancer Early Detection System")

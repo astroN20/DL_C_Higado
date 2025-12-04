@@ -15,18 +15,15 @@ st.markdown("### Deep Learning Multimodal Analysis (CT Scan + Clinical Data)")
 
 col1, col2 = st.columns([1, 1.5])
 
-# --- COLUMNA 1: IMAGEN (MODIFICADO PARA NO ALTERAR NADA) ---
+# --- COLUMNA 1: IMAGEN (OCULTA) ---
 with col1:
     st.subheader("1. CT Image Upload")
     file = st.file_uploader("Upload CT Scan", type=["jpg", "png", "jpeg"])
     
     if file is not None:
-        # Abrimos la imagen y la convertimos a RGB solo para evitar errores de formato,
-        # pero NO cambia el contenido visual.
-        image = Image.open(file).convert('RGB')
-        
-        # Mostramos la imagen tal cual es
-        st.image(image, caption="Uploaded CT Scan", use_column_width=True)
+        # CAMBIO: En lugar de mostrar la foto, solo mostramos un check verde
+        st.success("✅ Image uploaded successfully (Ready for analysis)")
+        st.info("Image data loaded into memory.")
 
 # --- COLUMNA 2: DATOS CLÍNICOS (DEMO VISUAL) ---
 with col2:

@@ -63,24 +63,29 @@ with col2:
         ast = st.number_input("12.  AST Levels (U/L)", value=0)
         tumor_size = st.number_input("13. Tamaño del Tumor (cm)", value=0)
 
-    if st.button("Perform Diagnosis", type="primary"):
+   if st.button("Perform Diagnosis", type="primary"):
         if file is None:
             st.warning("⚠️ Please upload an image first.")
         else:
             with st.spinner('Analyzing multimodal data...'):
                 try:
-                   
+                  
                     img = ImageOps.fit(image, (224, 224), Image.Resampling.LANCZOS)
                     img_array = np.array(img) / 255.0
                     img_batch = np.expand_dims(img_array, axis=0)
 
+                  
                     datos_clinicos = np.array([[
                         age, gender, bmi, alcohol, smoking, diabetes, hepatitis,
                         cirrhosis, family_history, afp, alt, ast, tumor_size
                     ]]) 
                     
+                   
+                    datos_clinicos_scaled = scaler.transform(datos_clinicos)
+
                  
-                    prediction = model.predict([img_batch, datos_clinicos])
+                    prediction = model.predict([img_batch, datos_clinicos_scaled])
+                    
                     probabilidad = prediction[0][0] * 100
                     
                     st.divider()

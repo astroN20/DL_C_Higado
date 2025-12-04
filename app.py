@@ -7,7 +7,7 @@ import joblib
 
 
 st.set_page_config(
-    page_title="Detección de Cáncer de Hígado",
+    page_title="Liver Cancer Screening",
     page_icon="🏥",
     layout="wide"
 )
@@ -26,48 +26,48 @@ def load_resources():
 
 model, scaler = load_resources()
 
-st.title("Sistema de Detección Temprana de Cáncer de Hígado")
-st.markdown("Este sistema utiliza **Deep Learning Multimodal** integrando imágenes de TC y datos clínicos.")
+st.title("Liver Cancer Early Detection System")
+st.markdown("This system uses **Deep Learning Multimodal** by integrating CT images and clinical data.")
 
 
 col1, col2 = st.columns([1, 1.5])
 
 with col1:
-    st.subheader("1. Imagen de Tomografía (TC)")
-    file = st.file_uploader("Cargar imagen (JPG/PNG)", type=["jpg", "png", "jpeg"])
+    st.subheader("1.Image Computed Tomography (CT)")
+    file = st.file_uploader("Upload image (JPG/PNG)", type=["jpg", "png", "jpeg"])
     
     if file is not None:
         image = Image.open(file)
-        st.image(image, caption="Imagen cargada", use_column_width=True)
+        st.image(image, caption="Image uploaded", use_column_width=True)
 
 with col2:
-    st.subheader("2. Datos Clínicos del Paciente")
+    st.subheader("2. Patient Clinical Data")
    
     c1, c2 = st.columns(2)
 
     with c1:
-        age = st.number_input("1. Edad", min_value=1, max_value=100, value=40)
-        gender = st.selectbox("2. Género", options=[0, 1], format_func=lambda x: "Masculino" if x == 1 else "Femenino")
-        bmi = st.number_input("3. Índice de Masa Corporal (BMI)", value=0.0)
-        alcohol = st.selectbox("4. Consumo de Alcohol", options=[0, 1], format_func=lambda x: "Sí" if x == 1 else "No")
-        smoking = st.selectbox("5. ¿Fuma?", options=[0, 1], format_func=lambda x: "Sí" if x == 1 else "No")
+        age = st.number_input("1. Age", min_value=1, max_value=100, value=40)
+        gender = st.selectbox("2.Gender", options=[0, 1], format_func=lambda x: "Masculino" if x == 1 else "Femenino")
+        bmi = st.number_input("3. Body Mass Index (BMI)", value=0.0)
+        alcohol = st.selectbox("4. Alcohol Consumption", options=[0, 1], format_func=lambda x: "Sí" if x == 1 else "No")
+        smoking = st.selectbox("5. ¿Smoke?", options=[0, 1], format_func=lambda x: "Sí" if x == 1 else "No")
         diabetes = st.selectbox("6. Diabetes", options=[0, 1], format_func=lambda x: "Sí" if x == 1 else "No")
         hepatitis = st.selectbox("7. Hepatitis B/C", options=[0, 1], format_func=lambda x: "Sí" if x == 1 else "No")
 
     with c2:
       
-        cirrhosis = st.selectbox("8. Cirrosis", options=[0, 1], format_func=lambda x: "Sí" if x == 1 else "No")
-        family_history = st.selectbox("9. Antecedentes Familiares", options=[0, 1], format_func=lambda x: "Sí" if x == 1 else "No")
-        afp = st.number_input("10. Niveles AFP (ng/mL)", value=0)
-        alt = st.number_input("11. Niveles ALT (U/L)", value=0)
-        ast = st.number_input("12. Niveles AST (U/L)", value=0)
+        cirrhosis = st.selectbox("8. Cirrhosis", options=[0, 1], format_func=lambda x: "Sí" if x == 1 else "No")
+        family_history = st.selectbox("9. Family History", options=[0, 1], format_func=lambda x: "Sí" if x == 1 else "No")
+        afp = st.number_input("10.  AFP Levels (ng/mL)", value=0)
+        alt = st.number_input("11. ALT Levels (U/L)", value=0)
+        ast = st.number_input("12.  AST Levels (U/L)", value=0)
         tumor_size = st.number_input("13. Tamaño del Tumor (cm)", value=0)
 
-    if st.button("Realizar Diagnóstico", type="primary"):
+    if st.button("Perform Diagnosis", type="primary"):
         if file is None:
-            st.warning("⚠️ Por favor cargue una imagen primero.")
+            st.warning("⚠️ Please upload an image first.")
         else:
-            with st.spinner('Analizando datos multimodales...'):
+            with st.spinner('Analyzing multimodal data...'):
                 try:
                    
                     img = ImageOps.fit(image, (224, 224), Image.Resampling.LANCZOS)
@@ -84,19 +84,19 @@ with col2:
                     probabilidad = prediction[0][0] * 100
                     
                     st.divider()
-                    st.subheader("Resultado del Análisis")
+                    st.subheader("Analysis Results")
                     if probabilidad > 50:
-                        st.error(f" **RIESGO ALTO DETECTADO**")
+                        st.error(f" **HIGH RISK DETECTED**")
                         st.write(f"Probabilidad de Cáncer: **{probabilidad:.2f}%**")
                         st.progress(int(probabilidad))
                     else:
-                        st.success(f" **BAJO RIESGO / SANO**")
+                        st.success(f" **LOW RISK / HEALTHY**")
                         st.write(f"Probabilidad de Cáncer: **{probabilidad:.2f}%**")
                         st.progress(int(probabilidad))
                         
                 except Exception as e:
-                    st.error(f"Ocurrió un error: {e}")
-                    st.warning("Revisa que el número de variables (13) coincida con tu entrenamiento.")
+                    st.error(f"An error occurred: {e}")
+                    st.warning("Check that the number of variables (13) matches your training.")
 
   
    

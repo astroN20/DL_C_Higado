@@ -5,14 +5,14 @@ import pandas as pd
 from PIL import Image, ImageOps
 import joblib
 
-# Configuración de la página (Debe ser la primera instrucción de Streamlit)
+# Configuración de la página
 st.set_page_config(
     page_title="Liver Cancer Screening",
     page_icon="🏥",
     layout="wide"
 )
 
-# Cargar recursos (Modelo y Scaler) una sola vez
+# Cargar recursos
 @st.cache_resource
 def load_resources():
     try:
@@ -25,51 +25,73 @@ def load_resources():
 
 model, scaler = load_resources()
 
-# Título y Descripción
 st.title("Liver Cancer Early Detection System")
 st.markdown("This system uses **Deep Learning Multimodal** by integrating CT images and clinical data.")
 
-# Crear columnas
 col1, col2 = st.columns([1, 1.5])
 
 # --- COLUMNA 1: IMAGEN ---
 with col1:
     st.subheader("1. Image Computed Tomography (CT)")
     file = st.file_uploader("Upload image (JPG/PNG)", type=["jpg", "png", "jpeg"])
-    
-    # Variable para guardar la imagen procesada
     image = None
-
     if file is not None:
-        # CORRECCIÓN 1: Convertir a RGB para evitar error con PNG
         image = Image.open(file).convert('RGB')
         st.image(image, caption="Image uploaded", use_column_width=True)
 
-# --- COLUMNA 2: DATOS CLÍNICOS ---
+# --- COLUMNA 2: DATOS CLÍNICOS EXACTOS ---
 with col2:
     st.subheader("2. Patient Clinical Data")
+    
+    # Diccionarios para etiquetas (según tus capturas)
+    hep_dict = {0: "No virus", 1: "HBV only", 2: "HCV only", 3: "HCV and HBV"}
+    cps_dict = {1: "A (1)", 2: "B (2)", 3: "C (3)"}
+    nodul_dict = {0: "Uninodular", 1: "Multinodular"}
     
     c1, c2 = st.columns(2)
 
     with c1:
+        # 1. Age
         age = st.number_input("1. Age", min_value=1, max_value=100, value=40)
-        gender = st.selectbox("2. Gender", options=[0, 1], format_func=lambda x: "Masculino" if x == 1 else "Femenino")
-        bmi = st.number_input("3. Body Mass Index (BMI)", value=0.0)
-        alcohol = st.selectbox("4. Alcohol Consumption", options=[0, 1], format_func=lambda x: "Sí" if x == 1 else "No")
-        smoking = st.selectbox("5. Smoke?", options=[0, 1], format_func=lambda x: "Sí" if x == 1 else "No")
-        diabetes = st.selectbox("6. Diabetes", options=[0, 1], format_func=lambda x: "Sí" if x == 1 else "No")
-        hepatitis = st.selectbox("7. Hepatitis B/C", options=[0, 1], format_func=lambda x: "Sí" if x == 1 else "No")
+        
+        # 2. Sex (Asumiendo 0=Female, 1=Male o viceversa, verifica tu entrenamiento)
+        sex = st.selectbox("2. Sex", options=[0, 1], format_func=lambda x: "Male" if x == 1 else "Female")
+        
+        # 3. Hepatitis (SEGÚN TU IMAGEN: 0, 1, 2, 3)
+        hepatitis = st.selectbox("3. Hepatitis Status", options=[0, 1, 2, 3], format_func=lambda x: hep_dict[x])
+        
+        # 4. Smoking
+        smoking = st.selectbox("4. Smoking", options=[1, 0], format_func=lambda x: "Yes" if x == 1 else "No")
+        
+        # 5. Alcohol
+        alcohol = st.selectbox("5. Alcohol", options=[1, 0], format_func=lambda x: "Yes" if x == 1 else "No")
+        
+        # 6. Family History Cancer (fhx_can)
+        fhx_can = st.selectbox("6. Family Hist. (Any Cancer)", options=[1, 0], format_func=lambda x: "Yes" if x == 1 else "No")
+
+        # 7. Family History Liver Cancer (fhx_livc)
+        fhx_livc = st.selectbox("7. Family Hist. (Liver Cancer)", options=[1, 0], format_func=lambda x: "Yes" if x == 1 else "No")
 
     with c2:
-        cirrhosis = st.selectbox("8. Cirrhosis", options=[0, 1], format_func=lambda x: "Sí" if x == 1 else "No")
-        family_history = st.selectbox("9. Family History", options=[0, 1], format_func=lambda x: "Sí" if x == 1 else "No")
-        afp = st.number_input("10. AFP Levels (ng/mL)", value=0.0)
-        alt = st.number_input("11. ALT Levels (U/L)", value=0.0)
-        ast = st.number_input("12. AST Levels (U/L)", value=0.0)
-        tumor_size = st.number_input("13. Tamaño del Tumor (cm)", value=0.0)
+        # 8. Diabetes
+        diabetes = st.selectbox("8. Diabetes", options=[1, 0], format_func=lambda x: "Yes" if x == 1 else "No")
+        
+        # 9. Evidence of Cirrhosis
+        evid_cirrh = st.selectbox("9. Evidence of Cirrhosis", options=[1, 0], format_func=lambda x: "Yes" if x == 1 else "No")
+        
+        # 10. CPS (SEGÚN TU IMAGEN: 1, 2, 3)
+        cps = st.selectbox("10. Child-Pugh Score (CPS)", options=[1, 2, 3], format_func=lambda x: cps_dict[x])
+        
+        # 11. AFP
+        afp = st.number_input("11. AFP Levels (ng/mL)", value=0.0)
+        
+        # 12. Tr_Size (Tumor Size)
+        tr_size = st.number_input("12. Tumor Size (cm)", value=0.0)
+        
+        # 13. Tumor Nodule (SEGÚN TU IMAGEN: 0, 1)
+        tumor_nodul = st.selectbox("13. Tumor Nodule", options=[0, 1], format_func=lambda x: nodul_dict[x])
 
     # --- BOTÓN DE PREDICCIÓN ---
-    # CORRECCIÓN 2: Indentación correcta del bloque del botón
     if st.button("Perform Diagnosis", type="primary"):
         if file is None or image is None:
             st.warning("⚠️ Please upload an image first.")
@@ -82,21 +104,23 @@ with col2:
                     img_batch = np.expand_dims(img_array, axis=0)
 
                     # 2. Procesamiento de Datos Clínicos
+                    # ORDEN EXACTO DE LA IMAGEN AMARILLA:
+                    # [age, Sex, hepatitis, Smoking, Alcohol, fhx_can, fhx_livc, Diabetes, Evidence_of_cirh, CPS, AFP, Tr_Size, tumor_nodul]
+                    
                     datos_clinicos = np.array([[
-                        age, gender, bmi, alcohol, smoking, diabetes, hepatitis,
-                        cirrhosis, family_history, afp, alt, ast, tumor_size
-                    ]]) 
+                        age, sex, hepatitis, smoking, alcohol, 
+                        fhx_can, fhx_livc, diabetes, evid_cirrh, 
+                        cps, afp, tr_size, tumor_nodul
+                    ]])
                     
+                    # 3. Escalar y Predecir
                     datos_clinicos_scaled = scaler.transform(datos_clinicos)
-                    
-                  
                     prediction = model.predict([img_batch, datos_clinicos_scaled])
                     probabilidad = prediction[0][0] * 100
                     
-                   
+                    # 4. Resultados
                     st.divider()
                     st.subheader("Analysis Results")
-                    
                     if probabilidad > 50:
                         st.error(f"**HIGH RISK DETECTED**")
                         st.write(f"Probabilidad de Cáncer: **{probabilidad:.2f}%**")
@@ -108,6 +132,4 @@ with col2:
                         
                 except Exception as e:
                     st.error(f"An error occurred: {e}")
-                    st.warning("Check that the number of variables (13) matches your training.")
-  
-   
+                    st.warning("Ensure your Scaler was trained with exactly these 13 variables in this order.")

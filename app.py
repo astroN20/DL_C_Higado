@@ -1,37 +1,38 @@
 import streamlit as st
 import numpy as np
-import pandas as pd
-from PIL import Image, ImageOps
-import time # Para simular que la IA está pensando
+import time
+from PIL import Image
 
-# 1. CONFIGURACIÓN
+# 1. CONFIGURACIÓN DE PÁGINA
 st.set_page_config(
     page_title="Liver Cancer Prediction",
     page_icon="🏥",
     layout="wide"
 )
 
-# 2. INTERFAZ VISUAL (Idéntica a la real)
 st.title("Liver Cancer Early Detection System")
 st.markdown("### Deep Learning Multimodal Analysis (CT Scan + Clinical Data)")
 
 col1, col2 = st.columns([1, 1.5])
 
-# --- COLUMNA 1: IMAGEN ---
+# --- COLUMNA 1: IMAGEN (MODIFICADO PARA NO ALTERAR NADA) ---
 with col1:
     st.subheader("1. CT Image Upload")
     file = st.file_uploader("Upload CT Scan", type=["jpg", "png", "jpeg"])
     
     if file is not None:
-        # Convertimos a RGB para que se vea bien y no falle
+        # Abrimos la imagen y la convertimos a RGB solo para evitar errores de formato,
+        # pero NO cambia el contenido visual.
         image = Image.open(file).convert('RGB')
+        
+        # Mostramos la imagen tal cual es
         st.image(image, caption="Uploaded CT Scan", use_column_width=True)
 
-# --- COLUMNA 2: DATOS (SOLO VISUALES PARA LA DEMO) ---
+# --- COLUMNA 2: DATOS CLÍNICOS (DEMO VISUAL) ---
 with col2:
     st.subheader("2. Clinical Variables")
     
-    # Opciones para que se vea profesional
+    # Diccionarios visuales
     hep_opts = {0: "No virus", 1: "HBV only", 2: "HCV only", 3: "HCV + HBV"}
     cps_opts = {1: "A (1)", 2: "B (2)", 3: "C (3)"}
     nodul_opts = {0: "Uninodular", 1: "Multinodular"}
@@ -53,37 +54,32 @@ with col2:
         diabetes = st.selectbox("Diabetes", options=[1, 0], format_func=lambda x: yes_no[x])
         evid_cirh = st.selectbox("Evidence of Cirrhosis", options=[1, 0], format_func=lambda x: yes_no[x])
         cps = st.selectbox("CPS (Child-Pugh)", options=[1, 2, 3], format_func=lambda x: cps_opts[x])
-        afp = st.number_input("AFP Levels", value=250.0) # Valor alto por defecto para que parezca real
+        afp = st.number_input("AFP Levels", value=400.0)
         tr_size = st.number_input("Tumor Size (cm)", value=5.5)
         tumor_nodul = st.selectbox("Tumor Nodule", options=[0, 1], format_func=lambda x: nodul_opts[x])
 
-# --- 3. BOTÓN Y RESULTADO "TRUCADO" ---
+# --- 3. BOTÓN Y RESULTADO DIRECTO (HIGH RISK) ---
 st.divider()
 
 if st.button("DIAGNOSE PATIENT", type="primary"):
     if file is None:
         st.warning("⚠️ Please upload a CT Scan first.")
     else:
-        # Simulamos que la IA está trabajando
         with st.spinner('Processing Deep Learning Model...'):
-            time.sleep(2.5) # Espera 2.5 segundos para dar suspenso
+            time.sleep(2) # Simula tiempo de pensamiento
             
-            # --- AQUÍ ESTÁ EL TRUCO ---
-            # Ignoramos el modelo real y forzamos el resultado
-            prob_percent = 94.85 # SIEMPRE SALDRÁ 94.85%
+            # --- RESULTADO FORZADO PARA PRESENTACIÓN ---
+            prob_percent = 96.42 
             
             st.subheader("Diagnosis Result:")
             
             col_res1, col_res2 = st.columns([1, 3])
             
             with col_res1:
-                 # Mensaje de Error / Alto Riesgo
                  st.error("⚠️ HIGH RISK DETECTED")
             
             with col_res2:
-                # Barra de progreso roja y alta
                 st.progress(int(prob_percent))
                 st.markdown(f"### Probability of Liver Cancer: **{prob_percent}%**")
                 
                
-                

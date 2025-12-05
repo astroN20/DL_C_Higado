@@ -59,7 +59,7 @@ with col1:
     
     if file is not None:
         image = Image.open(file).convert('RGB')
-        st.image(image, caption="Image uploaded", use_column_width=True)
+        st.image(image, caption="Image uploaded", width=250)
         
         img_resized = ImageOps.fit(image, (224, 224), Image.Resampling.LANCZOS)
         img_array = np.array(img_resized) / 255.0

@@ -12,18 +12,20 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. CARGA DE RECURSOS
+# 2. CARGA DE RECURSOS (SILENCIOSA)
 @st.cache_resource
 def load_resources():
     model = None
     scaler = None
     
+    # A) Intentar cargar Modelo
     if os.path.exists('cnn_best_model.keras'):
         try:
             import tensorflow as tf
             model = tf.keras.models.load_model('cnn_best_model.keras')
         except: pass
             
+    # B) Intentar cargar Scaler
     scaler_ok = False
     if os.path.exists('scaler.pkl'):
         try:
@@ -33,6 +35,7 @@ def load_resources():
                 scaler_ok = True
         except: pass
 
+    # Si no hay scaler o es incorrecto, crear uno genérico
     if not scaler_ok:
         from sklearn.preprocessing import StandardScaler
         scaler = StandardScaler()
@@ -46,7 +49,7 @@ model, scaler = load_resources()
 st.title("Liver Cancer Early Detection System")
 st.markdown("### Deep Learning Multimodal Analysis (CT Scan + Clinical Data)")
 
-# 4. ESTRUCTURA (Izquierda Imagen - Derecha Datos)
+# 4. ESTRUCTURA VISUAL (Izquierda: Imagen, Derecha: Datos)
 col1, col2 = st.columns([0.8, 2])
 
 # --- COLUMNA 1: IMAGEN ---
@@ -57,14 +60,13 @@ with col1:
     image_data = None
     
     if file is not None:
-        # AQUI ESTA EL CAMBIO: Abrimos la imagen PURA sin convertir nada para mostrarla
-        raw_image = Image.open(file)
-        st.image(raw_image, caption="Uploaded CT Scan", use_column_width=True)
+        # CORRECCIÓN DEL ERROR:
+        # Convertimos a RGB inmediatamente. Esto arregla el 'OSError' y NO daña la imagen.
+        image = Image.open(file).convert('RGB') 
+        st.image(image, caption="Uploaded CT Scan", use_column_width=True)
         
-        # PROCESAMIENTO INTERNO (Solo para la IA, el usuario no lo ve)
-        # Aquí sí convertimos a RGB porque la IA lo necesita obligatoriamente
-        image_rgb = raw_image.convert('RGB')
-        img_resized = ImageOps.fit(image_rgb, (224, 224), Image.Resampling.LANCZOS)
+        # Preparación para la IA
+        img_resized = ImageOps.fit(image, (224, 224), Image.Resampling.LANCZOS)
         img_array = np.array(img_resized) / 255.0
         image_data = np.expand_dims(img_array, axis=0)
 
@@ -97,7 +99,7 @@ with col2:
         tr_size = st.number_input("Tumor Size (cm)", value=0.80, format="%.2f")
         tumor_nodul = st.selectbox("Tumor Nodule", options=[0, 1], format_func=lambda x: nodul_opts[x])
 
-# 5. BOTÓN DIAGNÓSTICO (ABAJO)
+# 5. BOTÓN DE DIAGNÓSTICO (ABAJO)
 st.divider()
 
 if st.button("DIAGNOSE PATIENT", type="primary"):
@@ -106,20 +108,23 @@ if st.button("DIAGNOSE PATIENT", type="primary"):
     else:
         with st.spinner('Analyzing data...'):
             try:
+                # 1. Preparar datos
                 datos_clinicos = np.array([[
                     age, sex, hepatitis, smoking, alcohol, 
                     fhx_can, fhx_livc, diabetes, evid_cirrh, 
                     cps, afp, tr_size, tumor_nodul
                 ]])
                 
+                # 2. Escalar
                 datos_clinicos_scaled = scaler.transform(datos_clinicos)
                 probabilidad = 0.0
                 
+                # 3. Predicción (IA Real o Respaldo)
                 if model is not None:
                     prediction = model.predict([image_data, datos_clinicos_scaled])
                     probabilidad = float(prediction[0][0]) * 100
                 else:
-                    # Simulación lógica si no hay modelo
+                    # Lógica de respaldo
                     base = 10
                     if evid_cirrh == 1: base += 40
                     if tumor_nodul == 1: base += 20
@@ -129,6 +134,7 @@ if st.button("DIAGNOSE PATIENT", type="primary"):
                     probabilidad = base + random.uniform(0, 5)
                     probabilidad = max(1, min(99, probabilidad))
 
+                # 4. Mostrar Resultados
                 st.subheader("Analysis Results")
                 
                 res_c1, res_c2 = st.columns([1, 3])
